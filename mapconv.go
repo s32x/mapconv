@@ -3,7 +3,7 @@ package mapconv
 import (
 	"fmt"
 	"reflect"
-	"regexp"
+	"strings"
 )
 
 // MtosJSON is a JSON specific helper method that will populate a
@@ -40,7 +40,9 @@ func setStruct(t reflect.Type, v reflect.Value, m map[string]interface{}, tags .
 		if len(tags) > 0 {
 			for _, tag := range tags {
 				if val, ok := m[structTagVal(structField.Tag, tag)]; ok {
-					setField(fieldValue.Type(), fieldValue, val, tags...)
+					if err := setField(fieldValue.Type(), fieldValue, val, tags...); err != nil {
+						return err
+					}
 					continue
 				}
 			}
@@ -81,10 +83,7 @@ func setField(rt reflect.Type, rv reflect.Value, val interface{}, tags ...string
 // structTagVal recieves and parses a collection of struct tags and
 // returns the cooresponding tags value
 func structTagVal(tags reflect.StructTag, tag string) string {
-	re := regexp.MustCompile(fmt.Sprintf(`%s:"(.*?)"`, tag))
-	m := re.FindStringSubmatch(string(tags))
-	if len(m) > 2 {
-		return ""
-	}
-	return m[1]
+	tagVal := tags.Get(tag)
+	tagVal = strings.Split(tagVal, ",")[0] // Strip off optional params
+	return tagVal
 }
